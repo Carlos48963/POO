@@ -1,0 +1,203 @@
+import RPi.GPIO as GPIO
+import time
+import adafruit_dht 
+import board 
+
+# ----------------------------------------------------------------------
+
+class Robot:
+    def __init__(self, nombre, modelo):
+        self.nombre = nombre
+        self.modelo = modelo
+
+    def encender(self):
+        print(f"\n--- {self.nombre} está encendido. ---")
+
+    def apagar(self):
+        print(f"--- {self.nombre} está apagado. ---")
+
+    def estado(self):
+        print("Robot:", self.nombre, "Modelo:", self.modelo)
+
+# ----------------------------------------------------------------------
+
+class RobotObrero(Robot):
+    PIN_LED = 18 
+
+    def __init__(self, nombre, modelo, tarea):
+        super().__init__(nombre, modelo)
+        self.tarea = tarea
+        GPIO.setup(self.PIN_LED, GPIO.OUT)
+        GPIO.output(self.PIN_LED, False)
+        print(f"[{self.nombre}]: GPIO {self.PIN_LED} configurado (LED Obrero).")
+
+    def encender_led(self):
+        GPIO.output(self.PIN_LED, True)
+        print(f"[{self.nombre}]: LED ENCENDIDO.")
+
+    def apagar_led(self):
+        GPIO.output(self.PIN_LED, False)
+        print(f"[{self.nombre}]: LED APAGADO.")
+        
+    def menu(self):
+        self.encender()
+        print("Opciones: (ENCENDER / APAGAR / SALIR)")
+        
+        while True:
+            comando = input(f"[{self.nombre}]> ").strip().lower()
+            
+            if comando == 'encender':
+                self.encender_led()
+            elif comando == 'apagar':
+                self.apagar_led()
+            elif comando == 'salir':
+                self.apagar()
+                break
+            else:
+                print("Comando inválido. Usa 'ENCENDER', 'APAGAR' o 'SALIR'.")
+
+# ----------------------------------------------------------------------
+
+class RobotExplorador(Robot):
+    PIN_LED = 18 
+    PIN_BUTTON = 25
+
+    def __init__(self, nombre, modelo, zona_exploracion):
+        super().__init__(nombre, modelo)
+        self.zona_exploracion = zona_exploracion
+        
+        GPIO.setup(self.PIN_LED, GPIO.OUT) 
+        GPIO.setup(self.PIN_BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.output(self.PIN_LED, False)
+        print(f"[{self.nombre}]: GPIO {self.PIN_LED} (LED) y {self.PIN_BUTTON} (Botón) configurados.")
+
+    def apagar_led(self):
+        GPIO.output(self.PIN_LED, False)
+
+    def iniciar_exploracion_boton_loop(self):
+        """Bucle de lectura del botón físico (detiene todo el programa con CTRL+C)."""
+        print(f"[{self.nombre}]: MODO PULSAR ACTIVO. Presiona CTRL+C para DETENER EL PROGRAMA.")
+        last_state = False
+        
+        # Bucle sin try...except para gestionar la interrupción
+        while True:
+            current_state = GPIO.input(self.PIN_BUTTON) == GPIO.HIGH
+            
+            if current_state:
+                GPIO.output(self.PIN_LED, True) 
+                print(f"[{self.nombre}]: EXPLORANDO.")
+                time.sleep(0.5) 
+                
+            else:
+                GPIO.output(self.PIN_LED, False) 
+                if current_state != last_state:
+                    print(f"[{self.nombre}]: DETENIDO.")
+                
+                time.sleep(0.05)
+            
+            last_state = current_state
+
+    def menu(self):
+        self.encender()
+        print("Opciones: (PULSAR / SALIR)")
+
+        while True:
+            comando = input(f"[{self.nombre}]> ").strip().lower()
+
+            if comando == 'pulsar':
+                # Al salir de esta función con CTRL+C, el programa principal se detiene.
+                self.iniciar_exploracion_boton_loop() 
+                print("Volviendo al menú del Explorador...") # Esto solo se verá si el loop termina sin CTRL+C
+            elif comando == 'salir':
+                self.apagar()
+                break
+            else:
+                print("Comando inválido. Usa 'PULSAR' o 'SALIR'.")
+
+# ----------------------------------------------------------------------
+
+class RobotMedico(Robot):
+    def __init__(self, nombre, modelo, especialidad):
+        super().__init__(nombre, modelo)
+        self.especialidad = especialidad
+        
+        # Inicialización del dispositivo DHT sin try...except
+        self.dht_device = adafruit_dht.DHT11(board.D4)
+        
+    def leer_sensor(self):
+        # Lectura sin try...except (detendrá el programa si hay error de CRC/RuntimeError)
+        temperatura = self.dht_device.temperature
+        humedad = self.dht_device.humidity
+        return temperatura, humedad
+
+    def menu(self):
+        self.encender()
+        print(f"{self.nombre} está realizando la especialidad: {self.especialidad}")
+        print("Opciones: (TEMPERATURA / HUMEDAD / SALIR)")
+
+        while True:
+            comando = input(f"[{self.nombre}]> ").strip().lower()
+
+            if comando == 'salir':
+                self.apagar()
+                break
+            
+            temperatura_c, humedad = self.leer_sensor()
+            
+            # La verificación de None es necesaria ya que la librería puede devolver None en errores
+            if temperatura_c is None or humedad is None:
+                print(f"[{self.nombre} - ERROR]: Lectura fallida. Reintenta.")
+                time.sleep(1.0)
+                continue
+
+            if comando == 'temperatura':
+                temperatura_f = temperatura_c * (9 / 5) + 32
+                print(f"[{self.nombre}]: Temp: {temperatura_c:.1f} C / {temperatura_f:.1f} F")
+                
+            elif comando == 'humedad':
+                print(f"[{self.nombre}]: Humedad: {humedad}%")
+                
+            else:
+                print("Comando inválido. Usa 'TEMPERATURA', 'HUMEDAD' o 'SALIR'.")
+
+# ----------------------------------------------------------------------
+
+def simulacion_robots():
+    # Configuración general de GPIO
+    GPIO.setwarnings(False)
+    GPIO.setmode(GPIO.BCM)
+
+    # Instanciación de los robots
+    obrero = RobotObrero("R-Worker", "MK-3", "Control de iluminación")
+    explorador = RobotExplorador("R-Explorer", "XJ-9", "Marte")
+    medico = RobotMedico("R-Medic", "M-100", "Monitoreo Ambiental")
+    
+    print("\n=============================================")
+    print("      SISTEMA DE CONTROL DE ROBOTS (CLI)     ")
+    print("=============================================")
+
+    # Bucle principal sin try...except
+    while True:
+        print("\nMenú Principal: (OBRERO / EXPLORADOR / MEDICO / SALIR)")
+        
+        comando_principal = input("Selecciona un robot> ").strip().lower()
+        
+        if comando_principal == 'obrero':
+            obrero.menu()
+        elif comando_principal == 'explorador':
+            explorador.menu()
+        elif comando_principal == 'medico':
+            medico.menu()
+        elif comando_principal == 'salir':
+            break
+        else:
+            print("Robot no reconocido. Usa 'OBRERO', 'EXPLORADOR', 'MEDICO' o 'SALIR'.")
+            
+    # Limpieza de GPIO al finalizar (solo se ejecuta si se escribe 'salir')
+    print("\n--- Fin de Simulación ---")
+    GPIO.cleanup()
+    print("Pines GPIO liberados. Programa terminado.")
+
+
+if __name__ == "__main__":
+    simulacion_robots()
