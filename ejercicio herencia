@@ -1,0 +1,70 @@
+class Robot:
+    def __init__(self, nombre, modelo):
+        self.nombre = nombre
+        self.modelo = modelo
+
+    def encender(self):
+        print(self.nombre, "está encendido.")
+
+    def apagar(self):
+        print(self.nombre, "está apagado.")
+
+    def estado(self):
+        print("Robot:", self.nombre, "Modelo:", self.modelo)
+
+
+class RobotExplorador(Robot):
+    def __init__(self, nombre, modelo, zona_exploracion):
+        super().__init__(nombre, modelo)
+        self.zona_exploracion = zona_exploracion
+
+    def explorar(self):
+        print(self.nombre, "está explorando la zona:", self.zona_exploracion)
+
+
+class RobotObrero(Robot):
+    def __init__(self, nombre, modelo, tarea):
+        super().__init__(nombre, modelo)
+        self.tarea = tarea
+
+    def trabajar(self):
+        print(self.nombre, "está realizando la tarea:", self.tarea)
+
+class RobotMedico(Robot):
+    def __init__(self, nombre, modelo, especialidad):
+        super().__init__(nombre, modelo)
+        self.especialidad = especialidad
+        
+    def diagnosticar(self):
+        print(self.nombre, "está realizando la especialidad:", self.especialidad)
+
+
+def simulacion_robots():
+    explorador = RobotExplorador("R-Explorer", "XJ-9", "Zona Ártica")
+    obrero = RobotObrero("R-Worker", "MK-3", "Construcción de puente")
+
+    explorador.encender()
+    explorador.explorar()
+    explorador.estado()
+    explorador.apagar()
+
+    print("-----")
+
+    obrero.encender()
+    obrero.trabajar()
+    obrero.estado()
+    obrero.apagar()
+    
+def sim_robot_med():    
+    medico = RobotMedico("RMED", "R-MG", "Medicina General")
+
+    print("-----")
+
+    medico.encender()
+    medico.diagnosticar()
+    medico.estado()
+    medico.apagar()
+
+
+simulacion_robots()
+sim_robot_med()
