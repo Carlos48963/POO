@@ -1,0 +1,47 @@
+# Clase base Robot
+class Robot:
+    def __init__(self, nombre):
+        """Inicializa el robot con nombre, batería llena y posición x en 0."""
+        self.nombre = nombre
+        self.bateria = 100
+        self.x = 0
+
+    def saludar(self):
+        """Devuelve un saludo con el nombre del robot."""
+        return f"Hola, soy {self.nombre}"
+
+    def mover(self, distancia):
+        """Mueve al robot en el eje x y reduce la batería según la distancia."""
+        self.x += distancia
+        self.bateria -= abs(distancia)
+
+    def status(self):
+        """Retorna el estado básico del robot."""
+        return f"batería={self.bateria}, x={self.x}"
+
+
+# Clase derivada RobotVolador
+class RobotVolador(Robot):
+    def __init__(self, nombre):
+        """Inicializa el robot volador con altura z además de lo heredado."""
+        super().__init__(nombre)
+        self.z = 0
+
+    def volar(self, altura):
+        """Modifica la altura z y reduce batería. Volar consume el doble."""
+        self.z += altura
+        self.bateria -= abs(altura) * 2
+
+    def status(self):
+        """Retorna el estado completo incluyendo altura z."""
+        return f"batería={self.bateria}, x={self.x}, z={self.z}"
+
+
+# --- Simulación obligatoria ---
+r = RobotVolador("Phoenix")
+print(r.saludar())
+r.mover(15)      # Avanza 15 → x=15, batería=85
+r.volar(10)      # Sube 10 → z=10, batería=65
+print(r.status())
+r.volar(-5)      # Baja 5 → z=5, batería=55
+print(r.status())
