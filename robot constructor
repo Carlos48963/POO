@@ -1,0 +1,70 @@
+import time
+import telepot
+from telepot.loop import MessageLoop
+from M  import RobotConstructor, RobotMedico, RobotExplorador
+from vista import TelegramView
+import RPi.GPIO as GPIO
+
+class Controlador:
+    def __init__(self, bot):
+        self.bot = bot
+        self.vista = TelegramView()
+
+        self.constructor = RobotConstructor("Constructor")
+        self.medico = RobotMedico("Medico")
+        self.explorador = RobotExplorador("Explorador")
+
+    def manejar_mensaje(self, msg):
+        chat_id = msg["chat"]["id"]
+        comando = msg.get("text", "")
+
+        if comando == "/start":
+            self.vista.enviar(self.bot, chat_id, self.vista.menu_principal())
+
+        elif comando == "/constructor_on":
+            self.constructor.registrar_accion("led_encendido")
+            self.vista.enviar(self.bot, chat_id, self.constructor.encender())
+
+        elif comando == "/constructor_off":
+            self.constructor.registrar_accion("led_apagado_o_detenido") 
+            self.vista.enviar(self.bot, chat_id, self.constructor.apagar())
+
+        elif comando == "/medico_temp":
+            self.constructor.registrar_accion("medir_temperatura")
+            self.vista.enviar(self.bot, chat_id, self.medico.medir_temperatura())
+
+        elif comando == "/medico_hum":
+            self.constructor.registrar_accion("medir_humedad")
+            self.vista.enviar(self.bot, chat_id, self.medico.medir_humedad())
+
+        elif comando == "/explorar":
+            self.vista.enviar(self.bot, chat_id, "🚀 Presiona el botón para comenzar la exploración...")
+            self.constructor.registrar_accion("exploracion_iniciada")
+            resultado = self.explorador.explorar()
+            self.vista.enviar(self.bot, chat_id, resultado)
+
+        elif comando == "/ver_logs":
+            logs = self.constructor.obtener_logs_formato()
+            self.vista.enviar(self.bot, chat_id, logs)
+
+        elif comando == "/estado":
+            self.vista.enviar(self.bot, chat_id, "📡 Sistema funcionando correctamente.")
+
+        elif comando == "/salir":
+            GPIO.cleanup()
+            self.vista.enviar(self.bot, chat_id, "👋 Sistema apagado.")
+
+        else:
+            self.vista.enviar(self.bot, chat_id, "❌ Comando no reconocido.")
+
+
+TOKEN = "8513640504:AAGJAzWpp5K6Ec8uw_4K8Nvyw9EjgEK5E1g"
+bot = telepot.Bot(TOKEN)
+controlador = Controlador(bot)
+
+MessageLoop(bot, controlador.manejar_mensaje).run_as_thread()
+
+print("🤖 Bot Telegram activo...")
+
+while True:
+    time.sleep(10)
