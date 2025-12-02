@@ -1,0 +1,99 @@
+# modelo.py
+from datetime import datetime
+
+def registrar_accion(mensaje):
+    """Guarda en log.txt cada acción con fecha y hora."""
+    with open("log.txt", "a") as f:
+        f.write(f"{datetime.now()} - {mensaje}\n")
+
+
+class Robot:
+    """Clase base para cualquier robot."""
+    def __init__(self, nombre):
+        self.nombre = nombre
+        self.encendido = False
+
+    def encender(self):
+        self.encendido = True
+        registrar_accion(f"{self.nombre} encendido")
+
+    def apagar(self):
+        self.encendido = False
+        registrar_accion(f"{self.nombre} apagado")
+
+    def mover(self, direccion):
+        if not self.encendido:
+            registrar_accion(f"{self.nombre} no se movió (apagado)")
+            return
+        registrar_accion(f"{self.nombre} se mueve {direccion}")
+
+
+class RobotExplorador(Robot):
+    """Robot especializado en exploración."""
+    pass
+
+
+class RobotIndustrial(Robot):
+    """Robot especializado para tareas industriales."""
+    pass
+# vista.py
+class Vista:
+    """Encargada de mostrar información al usuario."""
+    
+    @staticmethod
+    def mostrar_mensaje(msg):
+        print(msg)
+# controlador.py
+from modelo import RobotExplorador, RobotIndustrial
+from vista import Vista
+
+class Controlador:
+    """Gestiona la interacción entre Vista y Modelo."""
+
+    def __init__(self, vista):
+        self.vista = vista
+
+    def crear_robot_explorador(self, nombre):
+        robot = RobotExplorador(nombre)
+        self.vista.mostrar_mensaje(f"RobotExplorador '{nombre}' creado")
+        return robot
+
+    def crear_robot_industrial(self, nombre):
+        robot = RobotIndustrial(nombre)
+        self.vista.mostrar_mensaje(f"RobotIndustrial '{nombre}' creado")
+        return robot
+
+    def encender_robot(self, robot):
+        robot.encender()
+        self.vista.mostrar_mensaje(f"{robot.nombre} encendido")
+
+    def apagar_robot(self, robot):
+        robot.apagar()
+        self.vista.mostrar_mensaje(f"{robot.nombre} apagado")
+
+    def mover_robot(self, robot, direccion):
+        robot.mover(direccion)
+        self.vista.mostrar_mensaje(f"{robot.nombre} movido {direccion}")
+# main.py
+from controlador import Controlador
+from vista import Vista
+
+vista = Vista()
+controlador = Controlador(vista)
+
+# --- Secuencia solicitada ---
+
+# Robot Explorador
+explorador = controlador.crear_robot_explorador("Explorer-1")
+controlador.encender_robot(explorador)
+controlador.mover_robot(explorador, "adelante")
+controlador.mover_robot(explorador, "izquierda")
+controlador.apagar_robot(explorador)
+
+# Robot Industrial
+industrial = controlador.crear_robot_industrial("Indus-9")
+controlador.encender_robot(industrial)
+controlador.mover_robot(industrial, "derecha")
+controlador.apagar_robot(industrial)
+
+print("\nSimulación completada. Revisa log.txt.")
